@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import env from 'misc/environment';
 import { IJwtPayload } from 'misc/jwt.payload.interface';
+import {blacklist, isBlacklisted} from 'misc/redis-client';
 
 
 const authRouter = Router();
@@ -33,8 +34,8 @@ authRouter.post('/signin', celebrate(
 
   const payload: IJwtPayload = { id: user.id };
   const tokens = {
-    accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }),
-    refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: '1w' }),
+    accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_LIFE }),
+    refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_LIFE }),
   }
 
   res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
@@ -57,6 +58,10 @@ authRouter.post('/signup/new_token', celebrate(
     res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
+  if(await isBlacklisted(refreshToken)) {
+    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+  }
+
   const userRepo = dataSource.getRepository(User);
   const user = await userRepo.findOneBy({ id });
   if (!user) {
@@ -64,7 +69,7 @@ authRouter.post('/signup/new_token', celebrate(
   }
 
   const tokens = {
-    accessToken: jwt.sign({ id: user.id }, env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }),
+    accessToken: jwt.sign({ id: user.id }, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_LIFE }),
   }
 
   res.cookie('refreshToken', refreshToken, { httpOnly: true });
@@ -94,14 +99,51 @@ authRouter.post('/signup', celebrate(
 
   const payload: IJwtPayload = { id: user.id };
   const tokens = {
-    accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }),
-    refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: '1w' }),
+    accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_LIFE }),
+    refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_LIFE }),
   }
 
   res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
   res.send({ msg: 'OK', data: tokens, error: null });
 });
 
+authRouter.post('/logout', celebrate(
+  {
+    cookies: {
+      refreshToken: Joi.string().required(),
+    },
+    headers: {
+      authorization: Joi.string().required(),
+    }
+  }
+), async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  const authHeader = req.headers.authorization;
+  const accessToken = authHeader.split(' ')[1];
+
+  let id: string;
+  try {
+    id = (jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET) as IJwtPayload).id;
+  } catch (error) {
+    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+  }
+
+  const userRepo = dataSource.getRepository(User);
+  const user = await userRepo.findOneBy({ id });
+  if (!user) {
+    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+  }
+
+  try {
+    await blacklist(accessToken, env.ACCESS_TOKEN_LIFE);
+    await blacklist(refreshToken, env.REFRESH_TOKEN_LIFE);
+  } catch (error) {
+    res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: null });
+  }
+
+  res.clearCookie('refreshToken');
+  res.send({ msg: 'OK', data: null, error: null });
+});
 
 authRouter.use(errors());
 export default authRouter;
