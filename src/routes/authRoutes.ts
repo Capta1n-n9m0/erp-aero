@@ -6,7 +6,8 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import env from 'misc/environment';
 import { IJwtPayload } from 'misc/jwt.payload.interface';
-import {blacklist, isBlacklisted} from 'misc/redis-client';
+import { blacklist, isBlacklisted } from 'misc/redis-client';
+import passport from 'passport';
 
 
 const authRouter = Router();
@@ -16,8 +17,8 @@ authRouter.post('/signin', celebrate(
     body: {
       id: Joi.string().required(),
       password: Joi.string().required(),
-    }
-  }
+    },
+  },
 ), async (req, res) => {
   const { id, password } = req.body;
   const userRepo = dataSource.getRepository(User);
@@ -36,7 +37,7 @@ authRouter.post('/signin', celebrate(
   const tokens = {
     accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_LIFE }),
     refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_LIFE }),
-  }
+  };
 
   res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
   res.send({ msg: 'OK', data: tokens, error: null });
@@ -46,8 +47,8 @@ authRouter.post('/signup/new_token', celebrate(
   {
     cookies: {
       refreshToken: Joi.string().required(),
-    }
-  }
+    },
+  },
 ), async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
 
@@ -58,7 +59,7 @@ authRouter.post('/signup/new_token', celebrate(
     res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
-  if(await isBlacklisted(refreshToken)) {
+  if (await isBlacklisted(refreshToken)) {
     res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
@@ -70,7 +71,7 @@ authRouter.post('/signup/new_token', celebrate(
 
   const tokens = {
     accessToken: jwt.sign({ id: user.id }, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_LIFE }),
-  }
+  };
 
   res.cookie('refreshToken', refreshToken, { httpOnly: true });
   res.send({ msg: 'OK', data: tokens, error: null });
@@ -81,8 +82,8 @@ authRouter.post('/signup', celebrate(
     body: {
       id: Joi.string().required(),
       password: Joi.string().required(),
-    }
-  }
+    },
+  },
 ), async (req, res) => {
   const { id, password } = req.body;
   const userRepo = dataSource.getRepository(User);
@@ -91,7 +92,7 @@ authRouter.post('/signup', celebrate(
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
   const user = userRepo.create({ id, password: hashedPassword });
-  try{
+  try {
     await userRepo.save(user);
   } catch (error) {
     res.status(409).send({ msg: 'Conflict', status: 409, data: null, error: null });
@@ -101,7 +102,7 @@ authRouter.post('/signup', celebrate(
   const tokens = {
     accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_LIFE }),
     refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_LIFE }),
-  }
+  };
 
   res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
   res.send({ msg: 'OK', data: tokens, error: null });
@@ -114,8 +115,8 @@ authRouter.post('/logout', celebrate(
     },
     headers: {
       authorization: Joi.string().required(),
-    }
-  }
+    },
+  },
 ), async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   const authHeader = req.headers.authorization;
@@ -143,6 +144,33 @@ authRouter.post('/logout', celebrate(
 
   res.clearCookie('refreshToken');
   res.send({ msg: 'OK', data: null, error: null });
+});
+
+authRouter.get('/info', celebrate(
+    {
+      headers: {
+        authorization: Joi.string().required(),
+      },
+    },
+  ), passport.authenticate('jwt'),
+  async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader.split(' ')[1];
+
+    let id: string;
+    try {
+      id = (jwt.verify(accessToken, env.ACCESS_TOKEN_SECRET) as IJwtPayload).id;
+    } catch (error) {
+      res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    }
+
+    const userRepo = dataSource.getRepository(User);
+    const user = await userRepo.findOneBy({ id });
+    if (!user) {
+      res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    }
+
+    res.send({ msg: 'OK', data: { id }, error: null });
 });
 
 authRouter.use(errors());
