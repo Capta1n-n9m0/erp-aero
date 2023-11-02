@@ -13,7 +13,7 @@ const authRouter = Router();
 authRouter.post('/signin', celebrate(
   {
     body: {
-      id: Joi.number().required(),
+      id: Joi.string().required(),
       password: Joi.string().required(),
     }
   }
@@ -68,6 +68,37 @@ authRouter.post('/signup/new_token', celebrate(
   }
 
   res.cookie('refreshToken', refreshToken, { httpOnly: true });
+  res.send({ msg: 'OK', data: tokens, error: null });
+});
+
+authRouter.post('/signup', celebrate(
+  {
+    body: {
+      id: Joi.string().required(),
+      password: Joi.string().required(),
+    }
+  }
+), async (req, res) => {
+  const { id, password } = req.body;
+  const userRepo = dataSource.getRepository(User);
+
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  const user = userRepo.create({ id, password: hashedPassword });
+  try{
+    await userRepo.save(user);
+  } catch (error) {
+    res.status(409).send({ msg: 'Conflict', status: 409, data: null, error: null });
+  }
+
+  const payload: IJwtPayload = { id: user.id };
+  const tokens = {
+    accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }),
+    refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: '1w' }),
+  }
+
+  res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
   res.send({ msg: 'OK', data: tokens, error: null });
 });
 
