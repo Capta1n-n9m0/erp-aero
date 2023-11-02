@@ -34,4 +34,3 @@ export const jwtAuth = new CustomStrategy(
   }
 );
 
-passport.use('jwt', jwtAuth);

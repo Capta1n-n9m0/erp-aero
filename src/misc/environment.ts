@@ -29,6 +29,7 @@ const env = {
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET || 'refresh-token-secret',
   REFRESH_TOKEN_LIFE: parseInt(process.env.REFRESH_TOKEN_LIFE) || 604800,
   FILE_UPLOAD_PATH: process.env.FILE_UPLOAD_PATH || 'uploads',
+  SESSION_SECRET: process.env.SESSION_SECRET || 'session-secret',
 }
 
 export default env;

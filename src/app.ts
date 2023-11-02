@@ -6,6 +6,9 @@ import logger from 'morgan';
 import helmet from 'helmet';
 import { authRouter } from 'routes/authRoutes';
 import { fileRouter } from 'routes/fileRoutes';
+import env from 'misc/environment';
+import session from 'express-session';
+import passport from 'passport';
 
 function handleErrors(err, req, res, next) {
   res.status(err.status || 500).send({ msg: err.message, status: err.status || 500, data: null, error: err.message });
@@ -22,6 +25,14 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(handleErrors);
+app.use(session({
+  secret: env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false }
+}));
+app.use(passport.initialize());
+app.use(passport.session())
 
 
 app.use(authRouter);

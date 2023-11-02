@@ -53,6 +53,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       FILE_UPLOAD_PATH: ./uploads
+      SESSION_SECRET: session_secret
       ACCESS_TOKEN_SECRET: access_token_secret
       ACCESS_TOKEN_LIFE: 600
       REFRESH_TOKEN_SECRET: refresh_token_secret
