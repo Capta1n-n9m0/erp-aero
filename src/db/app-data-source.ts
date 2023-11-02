@@ -1,6 +1,7 @@
 import { DataSource } from "typeorm"
 import env from "misc/environment"
 import { User } from 'db/entities/user.entity';
+import { File } from 'db/entities/file.entity';
 
 console.log(env.db);
 
@@ -11,7 +12,7 @@ const dataSource = new DataSource({
   username: env.db.username,
   password: env.db.password,
   database: env.db.database,
-  entities: [User],
+  entities: [User, File],
   logging: env.dev,
   synchronize: env.dev,
 });
