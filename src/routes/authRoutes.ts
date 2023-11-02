@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { celebrate, errors, Joi } from 'celebrate';
 import dataSource from 'db/app-data-source';
 import { User } from 'db/entities/user.entity';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import env from 'misc/environment';
 import { IJwtPayload } from 'misc/jwt.payload.interface';
@@ -25,7 +25,7 @@ authRouter.post('/signin', celebrate(
 
   const user = await userRepo.findOneBy({ id, password });
   if (!user) {
-    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -56,7 +56,7 @@ authRouter.post('/signup/new_token', celebrate(
   try {
     id = (jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET) as IJwtPayload).id;
   } catch (error) {
-    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
   if (await isBlacklisted(refreshToken)) {
@@ -66,7 +66,7 @@ authRouter.post('/signup/new_token', celebrate(
   const userRepo = dataSource.getRepository(User);
   const user = await userRepo.findOneBy({ id });
   if (!user) {
-    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
   const tokens = {
@@ -74,7 +74,7 @@ authRouter.post('/signup/new_token', celebrate(
   };
 
   res.cookie('refreshToken', refreshToken, { httpOnly: true });
-  res.send({ msg: 'OK', data: tokens, error: null });
+  return res.send({ msg: 'OK', data: tokens, error: null });
 });
 
 authRouter.post('/signup', celebrate(
@@ -95,7 +95,7 @@ authRouter.post('/signup', celebrate(
   try {
     await userRepo.save(user);
   } catch (error) {
-    res.status(409).send({ msg: 'Conflict', status: 409, data: null, error: null });
+    return res.status(409).send({ msg: 'Conflict', status: 409, data: null, error: null });
   }
 
   const payload: IJwtPayload = { id: user.id };
@@ -105,7 +105,7 @@ authRouter.post('/signup', celebrate(
   };
 
   res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
-  res.send({ msg: 'OK', data: tokens, error: null });
+  return res.send({ msg: 'OK', data: tokens, error: null });
 });
 
 authRouter.post('/logout', celebrate(
@@ -126,24 +126,24 @@ authRouter.post('/logout', celebrate(
   try {
     id = (jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET) as IJwtPayload).id;
   } catch (error) {
-    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
   const userRepo = dataSource.getRepository(User);
   const user = await userRepo.findOneBy({ id });
   if (!user) {
-    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+    return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
   try {
     await blacklist(accessToken, env.ACCESS_TOKEN_LIFE);
     await blacklist(refreshToken, env.REFRESH_TOKEN_LIFE);
   } catch (error) {
-    res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: null });
+    return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: null });
   }
 
   res.clearCookie('refreshToken');
-  res.send({ msg: 'OK', data: null, error: null });
+  return res.send({ msg: 'OK', data: null, error: null });
 });
 
 authRouter.get('/info', celebrate(
@@ -161,16 +161,16 @@ authRouter.get('/info', celebrate(
     try {
       id = (jwt.verify(accessToken, env.ACCESS_TOKEN_SECRET) as IJwtPayload).id;
     } catch (error) {
-      res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+      return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
     }
 
     const userRepo = dataSource.getRepository(User);
     const user = await userRepo.findOneBy({ id });
     if (!user) {
-      res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
+      return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
     }
 
-    res.send({ msg: 'OK', data: { id }, error: null });
+    return res.send({ msg: 'OK', data: { id }, error: null });
 });
 
 authRouter.use(errors());

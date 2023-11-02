@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.1",
+    "@types/bcryptjs": "^2.4.5",
     "@types/body-parser": "^1.19.4",
     "@types/cookie-parser": "^1.4.5",
     "@types/cors": "^2.8.15",
