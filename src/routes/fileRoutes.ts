@@ -158,6 +158,48 @@ fileRouter.get('/download/:id', passport.authenticate('jwt'), celebrate(
     });
 });
 
+fileRouter.put('/update/:id', passport.authenticate('jwt'), upload.single('file'), celebrate(
+  {
+    params: {
+      id: Joi.number().min(1).required(),
+    }
+  }), async (req, res) => {
+    const id = +req.params.id;
+    const file = req.file;
+
+    const fileRepo = dataSource.getRepository(File);
+
+    let oldFile: File;
+    try {
+      oldFile = await fileRepo.findOneBy({ id });
+    } catch (error) {
+      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    }
+
+    if (!oldFile) {
+      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+    }
+    let newFile = new File();
+    try {
+      await dataSource.transaction(async (manager) => {
+        const oldFilePath = path.join(folder, oldFile.name);
+        await manager.remove(oldFile);
+
+        newFile.name = file.originalname;
+        newFile.extension = path.extname(file.originalname);
+        newFile.size = file.size;
+        newFile.mimetype = file.mimetype;
+        newFile = await manager.save(newFile);
+
+        await fsp.unlink(oldFilePath);
+      });
+    } catch (error) {
+      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    }
+
+    res.send({ msg: 'OK', data: newFile, error: null });
+});
+
 
 
 fileRouter.use(errors());
