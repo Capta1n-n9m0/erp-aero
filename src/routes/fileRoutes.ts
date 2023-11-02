@@ -34,6 +34,7 @@ fileRouter.post('/upload', passport.authenticate('jwt'), upload.single('file'),
     let newFile = new File();
 
     newFile.name = file.originalname;
+    newFile.path = file.filename;
     newFile.extension = path.extname(file.originalname);
     newFile.size = file.size;
     newFile.mimetype = file.mimetype;
@@ -87,7 +88,7 @@ fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
     try {
       file = await fileRepo.findOneBy({ id });
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
     if (!file) {
@@ -97,7 +98,7 @@ fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
     try {
       await dataSource.transaction(async (manager) => {
         await manager.remove(file);
-        await fsp.unlink(path.join(folder, file.name));
+        await fsp.unlink(path.join(folder, file.path));
       });
     } catch (error) {
       return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
