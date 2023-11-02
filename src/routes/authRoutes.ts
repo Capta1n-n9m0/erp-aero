@@ -23,7 +23,7 @@ authRouter.post('/signin', celebrate(
   const { id, password } = req.body;
   const userRepo = dataSource.getRepository(User);
 
-  const user = await userRepo.findOneBy({ id, password });
+  const user = await userRepo.findOneBy({ id });
   if (!user) {
     return res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
@@ -43,7 +43,7 @@ authRouter.post('/signin', celebrate(
   res.send({ msg: 'OK', data: tokens, error: null });
 });
 
-authRouter.post('/signup/new_token', celebrate(
+authRouter.post('/signin/new_token', celebrate(
   {
     cookies: {
       refreshToken: Joi.string().required(),
@@ -88,6 +88,10 @@ authRouter.post('/signup', celebrate(
   const { id, password } = req.body;
   const userRepo = dataSource.getRepository(User);
 
+  const userExists = await userRepo.findOneBy({ id });
+  if (userExists) {
+    return res.status(409).send({ msg: 'Conflict', status: 409, data: null, error: null });
+  }
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -108,14 +112,14 @@ authRouter.post('/signup', celebrate(
   return res.send({ msg: 'OK', data: tokens, error: null });
 });
 
-authRouter.post('/logout', celebrate(
+authRouter.get('/logout', celebrate(
   {
-    cookies: {
-      refreshToken: Joi.string().required(),
-    },
-    headers: {
+    cookies: Joi.object({
+        refreshToken: Joi.string().required(),
+      }).unknown(true),
+    headers: Joi.object({
       authorization: Joi.string().required(),
-    },
+    }).unknown(true),
   },
 ), async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
@@ -148,9 +152,9 @@ authRouter.post('/logout', celebrate(
 
 authRouter.get('/info', celebrate(
     {
-      headers: {
+      headers: Joi.object({
         authorization: Joi.string().required(),
-      },
+      }).unknown(true),
     },
   ), passport.authenticate('jwt'),
   async (req, res) => {
