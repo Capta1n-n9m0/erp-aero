@@ -5,7 +5,7 @@ import * as uuid from 'uuid';
 import dataSource from 'db/app-data-source';
 import { File } from 'db/entities/file.entity';
 import passport from 'passport';
-import { celebrate, Joi } from 'celebrate';
+import { celebrate, errors, Joi } from 'celebrate';
 import env from 'misc/environment';
 import * as fsp from 'fs/promises';
 
@@ -79,7 +79,7 @@ fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
       id: Joi.number().min(1).required(),
     }
   }), async (req, res) => {
-  const id = +req.params.id;
+    const id = +req.params.id;
 
     const fileRepo = dataSource.getRepository(File);
 
@@ -106,7 +106,59 @@ fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
     res.send({ msg: 'OK', data: null, error: null });
 });
 
+fileRouter.get('/:id', passport.authenticate('jwt'), celebrate(
+  {
+    params: {
+      id: Joi.number().min(1).required(),
+    }
+  }), async (req, res) => {
+    const id = +req.params.id;
+
+    const fileRepo = dataSource.getRepository(File);
+
+    let file: File;
+    try {
+      file = await fileRepo.findOneBy({ id });
+    } catch (error) {
+      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    }
+
+    if (!file) {
+      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+    }
+
+    res.send({ msg: 'OK', data: file, error: null });
+});
+
+fileRouter.get('/download/:id', passport.authenticate('jwt'), celebrate(
+  {
+    params: {
+      id: Joi.number().min(1).required(),
+    }
+  }), async (req, res) => {
+    const id = +req.params.id;
+
+    const fileRepo = dataSource.getRepository(File);
+
+    let file: File;
+    try {
+      file = await fileRepo.findOneBy({ id });
+    } catch (error) {
+      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    }
+
+    if (!file) {
+      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+    }
+
+    res.download(path.join(folder, file.name), file.name, (err) => {
+      if (err) {
+        res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: err.message });
+      }
+    });
+});
 
 
 
+fileRouter.use(errors());
 export default fileRouter;
