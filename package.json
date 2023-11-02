@@ -9,6 +9,7 @@
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:prod": "node dist/main.js",
     "start:dev": "nodemon --watch \"src/**/*.ts\" --exec \"ts-node\" -r tsconfig-paths/register src/main.ts",
+    "experiment": "ts-node -r tsconfig-paths/register src/experiment.ts",
     "test": "jest"
   },
   "author": "Abbas Aliyev",

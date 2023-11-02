@@ -5,6 +5,7 @@ import { User } from 'db/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import env from 'misc/environment';
+import { IJwtPayload } from 'misc/jwt.payload.interface';
 
 
 const authRouter = Router();
@@ -30,9 +31,10 @@ authRouter.post('/signin', celebrate(
     res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
+  const payload: IJwtPayload = { id: user.id };
   const tokens = {
-    accessToken: jwt.sign({ id: user.id }, env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }),
-    refreshToken: jwt.sign({ id: user.id }, env.REFRESH_TOKEN_SECRET, { expiresIn: '1w' }),
+    accessToken: jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' }),
+    refreshToken: jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: '1w' }),
   }
 
   res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true });
@@ -48,15 +50,10 @@ authRouter.post('/signup/new_token', celebrate(
 ), async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
 
-  let id: string | number;
+  let id: string;
   try {
-    id = jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET) as string;
+    id = (jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET) as IJwtPayload).id;
   } catch (error) {
-    res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
-  }
-
-  id = parseInt(id as string);
-  if(!id) {
     res.status(401).send({ msg: 'Unauthorized', status: 401, data: null, error: null });
   }
 
