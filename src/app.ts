@@ -4,7 +4,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import logger from 'morgan';
 import helmet from 'helmet';
-import authRouter from 'routes/authRoutes';
+import { authRouter } from 'routes/authRoutes';
+import { fileRouter } from 'routes/fileRoutes';
 
 function handleErrors(err, req, res, next) {
   res.status(err.status || 500).send({ msg: err.message, status: err.status || 500, data: null, error: err.message });
@@ -24,6 +25,7 @@ app.use(handleErrors);
 
 
 app.use(authRouter);
+app.use('/file', fileRouter);
 
 app.get('/hello-world', (req, res) => {
   res.send({msg: 'Hello World!', status: 200, data: "Hello World!", error: null});

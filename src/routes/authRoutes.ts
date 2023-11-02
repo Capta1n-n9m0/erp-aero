@@ -10,7 +10,7 @@ import { blacklist, isBlacklisted } from 'misc/redis-client';
 import passport from 'passport';
 
 
-const authRouter = Router();
+export const authRouter = Router();
 
 authRouter.post('/signin', celebrate(
   {

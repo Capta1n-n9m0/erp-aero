@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
-const fileRouter = Router();
+export const fileRouter = Router();
 
 fileRouter.post('/upload', passport.authenticate('jwt'), upload.single('file'),
   async (req, res) => {
