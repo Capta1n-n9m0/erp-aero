@@ -6,9 +6,10 @@ import dataSource from 'db/app-data-source';
 import { File } from 'db/entities/file.entity';
 import passport from 'passport';
 import { celebrate, Joi } from 'celebrate';
+import env from 'misc/environment';
+import * as fsp from 'fs/promises';
 
-
-const folder = path.join(process.cwd(), 'uploads');
+const folder = path.join(process.cwd(), env.FILE_UPLOAD_PATH);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -71,6 +72,40 @@ fileRouter.get('/list', passport.authenticate('jwt'), celebrate(
 
   res.send({ msg: 'OK', data: files, error: null });
 });
+
+fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
+  {
+    params: {
+      id: Joi.number().min(1).required(),
+    }
+  }), async (req, res) => {
+  const id = +req.params.id;
+
+    const fileRepo = dataSource.getRepository(File);
+
+    let file: File;
+    try {
+      file = await fileRepo.findOneBy({ id });
+    } catch (error) {
+      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    }
+
+    if (!file) {
+      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+    }
+
+    try {
+      await dataSource.transaction(async (manager) => {
+        await manager.remove(file);
+        await fsp.unlink(path.join(folder, file.name));
+      });
+    } catch (error) {
+      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    }
+
+    res.send({ msg: 'OK', data: null, error: null });
+});
+
 
 
 
