@@ -1,0 +1,65 @@
+version: '1.0'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:latest
+    container_name: mysql-db
+    environment:
+      MYSQL_USER: erp_user
+      MYSQL_PASSWORD: erp_password
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: erp_database
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  # phpMyAdmin (Web-based MySQL client)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+  # Redis
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # Your Express Application
+  express-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: development
+    image: express-app:development
+    container_name: express-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      NODE_ENV: development
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: erp_user
+      DB_PASSWORD: erp_password
+      DB_DATABASE: erp_database
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./src:/usr/src/app/src
+
+volumes:
+  mysql-data:

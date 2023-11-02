@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                // Specify the target ECMAScript version.
+    "module": "commonjs",              // Specify the module system (CommonJS for Node.js).
+    "outDir": "./dist",                // Specify the output directory for compiled JavaScript files.
+    "rootDir": "./src",                // Specify the root directory of your TypeScript source files.
+    "esModuleInterop": true,           // Allow default imports from modules with no default export.
+    "skipLibCheck": true,              // Skip type checking of declaration files.
+    "forceConsistentCasingInFileNames": true, // Enforce consistent file casing.
+    "resolveJsonModule": true,         // Allow importing JSON modules.
+    "baseUrl": ".",                    // Base directory to resolve non-relative module names.
+    "paths": {
+      "*": ["src/*"]                  // Path mappings to simplify module import paths.
+    },
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+  },
+  "include": ["src/**/*.ts"],         // Specify the files to include in compilation.
+  "exclude": ["node_modules"]         // Specify files or directories to exclude from compilation.
+}
