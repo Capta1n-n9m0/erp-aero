@@ -41,10 +41,10 @@ fileRouter.post('/upload', passport.authenticate('jwt'), upload.single('file'),
     try {
       newFile = await fileRepo.save(newFile);
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
-    res.send({ msg: 'OK', data: newFile, error: null });
+    return res.send({ msg: 'OK', data: newFile, error: null });
 });
 
 fileRouter.get('/list', passport.authenticate('jwt'), celebrate(
@@ -67,10 +67,10 @@ fileRouter.get('/list', passport.authenticate('jwt'), celebrate(
       take: limit,
     });
   } catch (error) {
-    res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+    return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
   }
 
-  res.send({ msg: 'OK', data: files, error: null });
+  return res.send({ msg: 'OK', data: files, error: null });
 });
 
 fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
@@ -91,7 +91,7 @@ fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
     }
 
     if (!file) {
-      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+      return res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
     }
 
     try {
@@ -100,10 +100,10 @@ fileRouter.delete('/delete/:id', passport.authenticate('jwt'), celebrate(
         await fsp.unlink(path.join(folder, file.name));
       });
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
-    res.send({ msg: 'OK', data: null, error: null });
+    return res.send({ msg: 'OK', data: null, error: null });
 });
 
 fileRouter.get('/:id', passport.authenticate('jwt'), celebrate(
@@ -120,11 +120,11 @@ fileRouter.get('/:id', passport.authenticate('jwt'), celebrate(
     try {
       file = await fileRepo.findOneBy({ id });
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
     if (!file) {
-      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+      return res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
     }
 
     res.send({ msg: 'OK', data: file, error: null });
@@ -144,14 +144,14 @@ fileRouter.get('/download/:id', passport.authenticate('jwt'), celebrate(
     try {
       file = await fileRepo.findOneBy({ id });
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
     if (!file) {
-      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+      return res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
     }
 
-    res.download(path.join(folder, file.name), file.name, (err) => {
+    return res.download(path.join(folder, file.name), file.name, (err) => {
       if (err) {
         res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: err.message });
       }
@@ -173,11 +173,11 @@ fileRouter.put('/update/:id', passport.authenticate('jwt'), upload.single('file'
     try {
       oldFile = await fileRepo.findOneBy({ id });
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
     if (!oldFile) {
-      res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
+      return res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
     }
     let newFile = new File();
     try {
@@ -194,10 +194,10 @@ fileRouter.put('/update/:id', passport.authenticate('jwt'), upload.single('file'
         await fsp.unlink(oldFilePath);
       });
     } catch (error) {
-      res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
+      return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
-    res.send({ msg: 'OK', data: newFile, error: null });
+    return res.send({ msg: 'OK', data: newFile, error: null });
 });
 
 
