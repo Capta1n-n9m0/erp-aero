@@ -1,4 +1,3 @@
-import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { IJwtPayload } from 'misc/jwt.payload.interface';
 import passportCustom from 'passport-custom';
