@@ -1,14 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { IJwtPayload } from 'misc/jwt.payload.interface';
 import passportCustom from 'passport-custom';
-import passport from 'passport';
 import { isBlacklisted } from 'misc/redis-client';
 
 const CustomStrategy = passportCustom.Strategy;
 
 export const jwtAuth = new CustomStrategy(
-  async (req: Request, done: Function) => {
+  async (req, done) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return done(null, false);
