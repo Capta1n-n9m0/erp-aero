@@ -152,7 +152,7 @@ fileRouter.get('/download/:id', passport.authenticate('jwt'), celebrate(
       return res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
     }
 
-    return res.download(path.join(folder, file.name), file.name, (err) => {
+    return res.download(path.join(folder, file.path), file.name, (err) => {
       if (err) {
         res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: err.message });
       }
@@ -180,17 +180,16 @@ fileRouter.put('/update/:id', passport.authenticate('jwt'), upload.single('file'
     if (!oldFile) {
       return res.status(404).send({ msg: 'Not Found', status: 404, data: null, error: null });
     }
-    let newFile = new File();
     try {
       await dataSource.transaction(async (manager) => {
-        const oldFilePath = path.join(folder, oldFile.name);
-        await manager.remove(oldFile);
+        const oldFilePath = path.join(folder, oldFile.path);
 
-        newFile.name = file.originalname;
-        newFile.extension = path.extname(file.originalname);
-        newFile.size = file.size;
-        newFile.mimetype = file.mimetype;
-        newFile = await manager.save(newFile);
+        oldFile.name = file.originalname;
+        oldFile.path = file.filename;
+        oldFile.extension = path.extname(file.originalname);
+        oldFile.size = file.size;
+        oldFile.mimetype = file.mimetype;
+        oldFile = await manager.save(oldFile);
 
         await fsp.unlink(oldFilePath);
       });
@@ -198,7 +197,7 @@ fileRouter.put('/update/:id', passport.authenticate('jwt'), upload.single('file'
       return res.status(500).send({ msg: 'Internal Server Error', status: 500, data: null, error: error.message });
     }
 
-    return res.send({ msg: 'OK', data: newFile, error: null });
+    return res.send({ msg: 'OK', data: oldFile, error: null });
 });
 
 
